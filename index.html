@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PulseHIIT – Interval Timer</title>
+<meta name="theme-color" content="#070b16">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PulseHIIT">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script src="https://cdn.tailwindcss.com"></script>
+<style data-keep>
+:root{--accent:#10b981}
+*{box-sizing:border-box}
+html{-webkit-tap-highlight-color:transparent}
+body{margin:0;min-height:100vh;color:#e5e7eb;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(1100px 560px at 50% -8%,color-mix(in srgb,var(--accent) 30%,transparent),transparent 70%),#070b16;
+  padding-bottom:env(safe-area-inset-bottom)}
+.card{background:rgba(15,23,42,.72);border:1px solid rgba(148,163,184,.16);border-radius:1.25rem;backdrop-filter:blur(8px);padding:1.1rem}
+.h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;font-weight:700;margin:0 0 .7rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;border:1px solid rgba(148,163,184,.25);background:rgba(30,41,59,.7);color:#e2e8f0;
+  border-radius:.8rem;padding:.5rem .85rem;font-weight:600;font-size:.85rem;cursor:pointer;transition:background .15s,transform .05s,border-color .15s;user-select:none}
+.btn:hover{background:rgba(51,65,85,.85)}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#04120c;font-size:1.05rem;padding:.9rem 2.2rem;border-radius:1rem;min-width:9.5rem}
+.btn-primary:hover{background:color-mix(in srgb,var(--accent) 85%,white)}
+.btn-round{width:3.2rem;height:3.2rem;padding:0;border-radius:999px}
+.btn svg{width:1.2rem;height:1.2rem;fill:currentColor}
+.chip-phase{display:inline-block;padding:.25rem .8rem;border-radius:999px;font-weight:800;letter-spacing:.16em;font-size:.78rem;color:#04120c;background:var(--accent)}
+.ring-track{stroke:rgba(148,163,184,.16)}
+.ring-bar{stroke:var(--accent);transition:stroke-dashoffset .09s linear,stroke .35s}
+.ring-bar.warn{stroke:#f59e0b;animation:glow .5s ease-in-out infinite alternate}
+@keyframes glow{from{filter:drop-shadow(0 0 3px #f59e0b)}to{filter:drop-shadow(0 0 16px #f59e0b)}}
+.time{font-variant-numeric:tabular-nums;font-weight:800;font-size:clamp(2.8rem,15vw,4.6rem);line-height:1;letter-spacing:-.02em}
+.time.warn{color:#fbbf24;animation:tp .5s ease-in-out infinite alternate}
+@keyframes tp{from{transform:scale(1)}to{transform:scale(1.07)}}
+.exname{font-size:clamp(1.5rem,6vw,2.1rem);font-weight:800;text-align:center;line-height:1.15;word-break:break-word}
+.badge-up{display:inline-block;margin-top:.5rem;padding:.3rem .8rem;border-radius:999px;background:rgba(148,163,184,.14);color:#cbd5e1;font-size:.9rem}
+.badge-up b{color:#fff}
+.callout{margin:0 auto;max-width:28rem;padding:.8rem 1.1rem;border-radius:1rem;text-align:center;font-size:1.15rem;
+  background:color-mix(in srgb,var(--accent) 16%,transparent);border:1.5px solid color-mix(in srgb,var(--accent) 60%,transparent)}
+.callout b{font-weight:800;color:#fff}
+.dots{display:flex;flex-wrap:wrap;gap:.45rem;justify-content:center}
+.dot{position:relative;width:15px;height:15px;border-radius:999px;border:2px solid rgba(148,163,184,.45)}
+.dot.done{background:var(--accent);border-color:var(--accent)}
+.dot.cur{border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 30%,transparent);animation:dp 1s ease-in-out infinite alternate}
+@keyframes dp{to{box-shadow:0 0 0 7px color-mix(in srgb,var(--accent) 10%,transparent)}}
+.dot[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:130%;left:50%;transform:translateX(-50%);white-space:nowrap;background:#0f172a;border:1px solid #334155;
+  color:#fff;font-size:.72rem;padding:.2rem .5rem;border-radius:.4rem;z-index:20;pointer-events:none}
+.lbl{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;text-align:center;margin-bottom:.4rem}
+.bar{height:8px;border-radius:99px;background:rgba(148,163,184,.16);overflow:hidden}
+.bar>i{display:block;height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .2s linear}
+.field{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.35rem 0}
+.field label{font-size:.88rem;color:#cbd5e1}
+.stepper{display:flex;align-items:center;gap:.35rem}
+.stepper button{width:2.2rem;height:2.2rem;border-radius:.6rem;border:1px solid rgba(148,163,184,.25);background:rgba(30,41,59,.8);color:#fff;font-size:1.15rem;font-weight:700;cursor:pointer}
+.stepper button:active{transform:scale(.94)}
+.stepper input,.namefield input{background:rgba(2,6,23,.6);border:1px solid rgba(148,163,184,.25);color:#fff;border-radius:.6rem;padding:.4rem .5rem;font-size:.95rem;outline:none}
+.stepper input{width:4.6rem;text-align:center;font-variant-numeric:tabular-nums;font-weight:600}
+.stepper input:focus,.namefield input:focus{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)}
+.locked{opacity:.45;pointer-events:none}
+.chips{display:flex;flex-wrap:wrap;gap:.45rem}
+.chip{display:inline-flex;align-items:center;border-radius:999px;border:1px solid rgba(148,163,184,.28);background:rgba(30,41,59,.7);overflow:hidden}
+.chip button{background:none;border:0;color:#e2e8f0;padding:.38rem .8rem;font-size:.82rem;font-weight:600;cursor:pointer}
+.chip button:hover{background:rgba(51,65,85,.9)}
+.chip .x{padding:.38rem .55rem;color:#f87171;border-left:1px solid rgba(148,163,184,.2)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem;background:rgba(2,6,23,.55);padding:.25rem;border-radius:.8rem}
+.seg button{border:0;background:none;color:#94a3b8;padding:.5rem .3rem;border-radius:.6rem;font-size:.8rem;font-weight:700;cursor:pointer}
+.seg button.on{background:var(--accent);color:#04120c}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.namefield{display:flex;align-items:center;gap:.5rem}
+.namefield span{width:1.4rem;text-align:right;color:#64748b;font-size:.8rem}
+.namefield input{flex:1;min-width:0}
+summary{cursor:pointer;list-style:none}
+summary::-webkit-details-marker{display:none}
+details[open] .chev{transform:rotate(90deg)}
+.chev{display:inline-block;transition:transform .15s}
+#toast{position:fixed;left:50%;bottom:1.4rem;transform:translate(-50%,20px);background:#0f172a;border:1px solid #334155;color:#fff;padding:.65rem 1rem;border-radius:.8rem;
+  font-size:.88rem;opacity:0;pointer-events:none;transition:all .25s;max-width:92vw;text-align:center;z-index:50}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+kbd{background:#1e293b;border:1px solid #334155;border-bottom-width:2px;border-radius:.3rem;padding:0 .35rem;font-size:.75rem}
+.warnbadge{display:inline-block;margin-top:.5rem;padding:.3rem .6rem;border-radius:.5rem;background:rgba(245,158,11,.14);border:1px solid rgba(245,158,11,.5);color:#fcd34d;font-size:.75rem}
+</style>
+<script id="app-defaults" type="application/json">null</script>
+</head>
+<body>
+<div class="mx-auto max-w-6xl px-4 py-5">
+  <header class="flex flex-wrap items-center justify-between gap-3 mb-5">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl grid place-items-center" style="background:var(--accent)">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#04120c" stroke-width="3" stroke-linecap="round"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>
+      </div>
+      <div>
+        <h1 class="text-xl font-extrabold leading-none">PulseHIIT</h1>
+        <div class="text-xs text-slate-400">Interval timer that plays nice with your music</div>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button class="btn" id="btnPip" title="Floating mini-timer">⧉ Mini-Timer</button>
+      <button class="btn" id="btnShare">🔗 Share</button>
+      <button class="btn" id="btnSaveApp" title="Download a copy of this page with your current settings and presets built in as the defaults">💾 Save Settings to File</button>
+    </div>
+  </header>
+
+  <div class="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+    <!-- TIMER -->
+    <section class="card flex flex-col gap-4">
+      <div class="text-center">
+        <span class="chip-phase" id="phaseChip">READY</span>
+        <div class="text-sm text-slate-400 mt-2" id="roundInfo"></div>
+      </div>
+
+      <div class="relative mx-auto w-full" style="max-width:330px;aspect-ratio:1/1">
+        <svg viewBox="0 0 200 200" class="w-full h-full" aria-hidden="true">
+          <circle class="ring-track" cx="100" cy="100" r="88" fill="none" stroke-width="10"/>
+          <circle id="ringBar" class="ring-bar" cx="100" cy="100" r="88" fill="none" stroke-width="10" stroke-linecap="round"
+            stroke-dasharray="552.92" stroke-dashoffset="0" transform="rotate(-90 100 100)"/>
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+          <div class="time" id="timeText" aria-live="off">0:00</div>
+          <div class="text-xs tracking-widest text-slate-400 mt-1" id="subText"></div>
+        </div>
+      </div>
+
+      <div id="heroInfo" style="min-height:5.2rem" class="flex flex-col items-center justify-center"></div>
+
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div><div class="lbl">Exercise in round</div><div class="dots" id="exDots"></div></div>
+        <div><div class="lbl">Rounds completed</div><div class="dots" id="rdDots"></div></div>
+      </div>
+
+      <div>
+        <div class="bar"><i id="progBar"></i></div>
+        <div class="flex justify-between text-xs text-slate-400 mt-1">
+          <span id="progPct">0%</span><span>Remaining: <b class="text-slate-200" id="totalRem">0:00</b></span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-center gap-3 flex-wrap">
+        <button class="btn btn-round" id="btnBack" title="Previous phase" aria-label="Previous phase"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zM9.5 12 18 6v12z"/></svg></button>
+        <button class="btn btn-primary" id="btnStart">Start</button>
+        <button class="btn btn-round" id="btnNext" title="Skip phase (N)" aria-label="Skip phase"><svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18V6l8.5 6z"/></svg></button>
+        <button class="btn btn-round" id="btnReset" title="Reset (R)" aria-label="Reset"><svg viewBox="0 0 24 24"><path d="M12 5V2L7 6.5 12 11V8a5 5 0 1 1-5 5H5a7 7 0 1 0 7-8z"/></svg></button>
+        <button class="btn" id="btnMute" title="Mute (M)">🔊 Sound on</button>
+      </div>
+      <div class="text-center text-xs text-slate-500"><kbd>Space</kbd> start/pause · <kbd>R</kbd> reset · <kbd>N</kbd> skip · <kbd>M</kbd> mute</div>
+    </section>
+
+    <!-- SETTINGS -->
+    <div class="flex flex-col gap-5">
+      <section class="card">
+        <h2 class="h2">Presets</h2>
+        <div class="chips" id="presets"></div>
+        <div class="flex flex-wrap gap-2 mt-3">
+          <button class="btn" id="btnSavePreset">+ Save Preset</button>
+          <button class="btn" id="btnFileDefaults" title="Reload the settings built into this file">↺ Restore File Defaults</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="flex items-center justify-between">
+          <h2 class="h2" style="margin:0">Intervals</h2>
+          <span class="text-xs text-amber-300" id="lockHint" hidden>Pause or reset to edit intervals</span>
+        </div>
+        <div id="fields" class="mt-2"></div>
+        <details class="mt-3" id="namesDetails">
+          <summary class="btn w-full justify-between"><span>Customize Exercises in Round</span><span class="chev">▸</span></summary>
+          <div class="mt-3 grid gap-2" id="namesGrid"></div>
+          <button class="btn mt-3" id="btnClearNames">Clear / Reset Names</button>
+        </details>
+      </section>
+
+      <section class="card">
+        <h2 class="h2">Audio cues</h2>
+        <div class="seg" id="modeSeg" role="tablist">
+          <button data-mode="chimes">🔔 Chimes</button>
+          <button data-mode="cadence">🗣 Synth Cadence</button>
+          <button data-mode="voice">🎙 OS Voice</button>
+        </div>
+        <div class="text-xs text-slate-400 mt-2" id="modeDesc"></div>
+        <div class="warnbadge" id="voiceWarn" hidden>⚠ OS speech may briefly duck or pause music on iPhones.</div>
+        <div class="flex items-center gap-3 mt-4">
+          <span class="text-sm text-slate-300 w-16">Volume</span>
+          <input type="range" id="vol" min="0" max="100" step="1" aria-label="Cue volume">
+          <span class="text-sm text-slate-300 w-10 text-right" id="volVal"></span>
+        </div>
+        <div class="text-xs text-slate-500 mt-4 mb-2">Preview — start your music, then balance the volume:</div>
+        <div class="flex flex-wrap gap-2">
+          <button class="btn" data-prev="321">3-2-1</button>
+          <button class="btn" data-prev="WORK">Work</button>
+          <button class="btn" data-prev="REST">Rest</button>
+          <button class="btn" data-prev="ROUND_REST">Round</button>
+        </div>
+        <div class="text-xs text-slate-500 mt-3">Uses only the Web Audio API (no &lt;audio&gt; element, no media session) with an ambient audio session, so Spotify, Apple Music, and YouTube keep playing.</div>
+      </section>
+    </div>
+  </div>
+</div>
+<div id="toast" role="status"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2, '0');
+
+/* ============ Settings & persistence ============ */
+const LS_S = 'pulsehiit.settings.v1', LS_P = 'pulsehiit.presets.v1';
+const BASE = {work:40, rest:20, roundRest:60, ex:5, rd:3, prep:10, names:[], mode:'chimes', volume:0.8, muted:false};
+let baked = null; try { baked = JSON.parse($('#app-defaults').textContent); } catch (e) {}
+const FILE_DEFAULTS = Object.assign({}, BASE, baked || {});
+let S = Object.assign({}, FILE_DEFAULTS);
+let custom = Array.isArray(baked && baked.presets) ? baked.presets.slice() : [];
+delete S.presets;
+// If this file was re-saved with new defaults, those win over stale browser storage (once).
+const LS_SIG = 'pulsehiit.bakedSig.v1';
+const bakedSig = baked ? JSON.stringify(baked) : '';
+let sigChanged = false;
+try { sigChanged = !!baked && localStorage.getItem(LS_SIG) !== bakedSig; } catch (e) {}
+if (!sigChanged) {
+  try { const s = JSON.parse(localStorage.getItem(LS_S)); if (s && typeof s === 'object') Object.assign(S, s); } catch (e) {}
+  try { const c = JSON.parse(localStorage.getItem(LS_P)); if (Array.isArray(c)) custom = c; } catch (e) {}
+}
+let storageOK = true;
+try { localStorage.setItem('pulsehiit.t', '1'); localStorage.removeItem('pulsehiit.t'); if (sigChanged) localStorage.setItem(LS_SIG, bakedSig); } catch (e) { storageOK = false; }
+
+const FIELDS = [
+  {k:'work',      label:'Work Duration',        type:'time', min:1, max:5999, step:5},
+  {k:'rest',      label:'Exercise Rest',        type:'time', min:0, max:5999, step:5},
+  {k:'roundRest', label:'End-of-Round Rest',    type:'time', min:0, max:5999, step:5},
+  {k:'ex',        label:'Exercises per Round',  type:'int',  min:1, max:30,   step:1},
+  {k:'rd',        label:'Total Rounds',         type:'int',  min:1, max:99,   step:1},
+  {k:'prep',      label:'Prep Countdown (sec)', type:'int',  min:0, max:600,  step:5},
+];
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+function sanitize() {
+  FIELDS.forEach(f => { const v = Math.round(Number(S[f.k])); S[f.k] = Number.isFinite(v) ? clamp(v, f.min, f.max) : BASE[f.k]; });
+  S.names = Array.isArray(S.names) ? S.names.map(n => String(n || '').slice(0, 40)) : [];
+  if (!['chimes','cadence','voice'].includes(S.mode)) S.mode = 'chimes';
+  S.volume = clamp(Number(S.volume) || 0, 0, 1); S.muted = !!S.muted;
+}
+const saveS = () => { try { localStorage.setItem(LS_S, JSON.stringify(S)); } catch (e) {} };
+const saveP = () => { try { localStorage.setItem(LS_P, JSON.stringify(custom)); } catch (e) {} };
+
+// URL params override everything
+(function () {
+  const q = new URLSearchParams(location.search);
+  const map = {w:'work', r:'rest', rr:'roundRest', ex:'ex', rd:'rd', p:'prep'};
+  let any = false;
+  Object.entries(map).forEach(([p, k]) => { if (q.has(p)) { const v = parseInt(q.get(p), 10); if (Number.isFinite(v)) { S[k] = v; any = true; } } });
+  if (q.has('names')) { S.names = q.get('names').split('|'); any = true; }
+  if (any) { sanitize(); saveS(); }
+})();
+sanitize();
+
+const BUILT = [
+  {name:'Tabata', work:20, rest:10, roundRest:60, ex:8, rd:3, prep:10,
+    names:['Jump Squats','Push-Ups','High Knees','Mountain Climbers','Burpees','Plank Jacks','Lunges','Bicycle Crunches']},
+  {name:'Classic HIIT', work:45, rest:15, roundRest:90, ex:5, rd:4, prep:10,
+    names:['Kettlebell Swings','Thrusters','Renegade Rows','Box Jumps','Russian Twists']},
+  {name:'Boxing', work:180, rest:0, roundRest:60, ex:1, rd:12, prep:10, names:['Shadowboxing / Heavy Bag']},
+];
+
+/* ============ Helpers ============ */
+const exName = i => (S.names[i] && S.names[i].trim()) || ('Exercise ' + (i + 1));
+const fmtMMSS = s => pad(Math.floor(s / 60)) + ':' + pad(s % 60);
+function fmtMs(ms) {
+  const t = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}
+function parseTime(str) {
+  str = String(str).trim();
+  if (!str) return NaN;
+  if (str.includes(':')) {
+    const [m, s] = str.split(':');
+    const mm = parseInt(m || '0', 10), ss = parseInt(s || '0', 10);
+    return (Number.isFinite(mm) && Number.isFinite(ss)) ? mm * 60 + ss : NaN;
+  }
+  return /^\d+$/.test(str) ? parseInt(str, 10) : NaN;
+}
+let toastT;
+function toast(msg, ms = 2600) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), ms); }
+
+/* ============ State machine ============ */
+const PH = {
+  PREP:      {label:'GET READY',  short:'Get Ready',  color:'#f59e0b'},
+  WORK:      {label:'WORK',       short:'Work',       color:'#10b981'},
+  REST:      {label:'REST',       short:'Rest',       color:'#0ea5e9'},
+  ROUND_REST:{label:'ROUND REST', short:'Round Rest', color:'#a855f7'},
+  COMPLETE:  {label:'COMPLETE',   short:'Complete',   color:'#fbbf24'},
+};
+const startPos = () => S.prep > 0 ? {phase:'PREP', ex:0, round:0} : {phase:'WORK', ex:0, round:0};
+const dur = p => ({PREP:S.prep, WORK:S.work, REST:S.rest, ROUND_REST:S.roundRest, COMPLETE:0}[p.phase]) * 1000;
+function nextPos(p) {
+  switch (p.phase) {
+    case 'PREP': return {phase:'WORK', ex:0, round:0};
+    case 'WORK':
+      if (p.ex < S.ex - 1) return S.rest > 0 ? {phase:'REST', ex:p.ex, round:p.round} : {phase:'WORK', ex:p.ex + 1, round:p.round};
+      if (p.round < S.rd - 1) return S.roundRest > 0 ? {phase:'ROUND_REST', ex:p.ex, round:p.round} : {phase:'WORK', ex:0, round:p.round + 1};
+      return {phase:'COMPLETE', ex:p.ex, round:p.round};
+    case 'REST': return {phase:'WORK', ex:p.ex + 1, round:p.round};
+    case 'ROUND_REST': return {phase:'WORK', ex:0, round:p.round + 1};
+    default: return p;
+  }
+}
+function prevPos(p) {
+  switch (p.phase) {
+    case 'WORK':
+      if (p.ex > 0) return S.rest > 0 ? {phase:'REST', ex:p.ex - 1, round:p.round} : {phase:'WORK', ex:p.ex - 1, round:p.round};
+      if (p.round > 0) return S.roundRest > 0 ? {phase:'ROUND_REST', ex:S.ex - 1, round:p.round - 1} : {phase:'WORK', ex:S.ex - 1, round:p.round - 1};
+      return startPos();
+    case 'REST': return {phase:'WORK', ex:p.ex, round:p.round};
+    case 'ROUND_REST': return {phase:'WORK', ex:S.ex - 1, round:p.round};
+    case 'COMPLETE': return {phase:'WORK', ex:S.ex - 1, round:S.rd - 1};
+    default: return startPos();
+  }
+}
+function upNext(p) {
+  switch (p.phase) {
+    case 'PREP': return exName(0);
+    case 'WORK':
+      if (p.ex < S.ex - 1) return exName(p.ex + 1);
+      if (p.round < S.rd - 1) return S.roundRest > 0 ? 'End-of-Round Rest' : exName(0);
+      return 'Workout Complete';
+    case 'REST': return exName(p.ex + 1);
+    case 'ROUND_REST': return exName(0);
+    default: return '';
+  }
+}
+function sumFrom(p) { let t = 0, g = 0; while (p.phase !== 'COMPLETE' && g++ < 6000) { t += dur(p); p = nextPos(p); } return t; }
+
+let pos = startPos(), remaining = dur(pos), status = 'idle', last = 0, serial = 0, cueKey = '';
+let restAfter = 0, totalDur = 1;
+
+/* ============ Audio engine (Web Audio only) ============ */
+let ctx = null, master = null, keep = null;
+function enforceAmbientMixing() { try { if (navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch (e) {} }
+function ensureAudio() {
+  enforceAmbientMixing();
+  try {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
+      ctx = new AC({latencyHint:'interactive'});
+      master = ctx.createGain();
+      const comp = ctx.createDynamicsCompressor();
+      master.connect(comp); comp.connect(ctx.destination);
+      applyVolume();
+    }
+    if (ctx.state !== 'running') ctx.resume();
+    return true;
+  } catch (e) { return false; }
+}
+function applyVolume() { if (master) master.gain.setTargetAtTime(S.muted ? 0 : S.volume, ctx.currentTime, 0.01); }
+function startKeepAlive() {
+  if (!ensureAudio() || keep) return;
+  try {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    g.gain.value = 0.00001; o.frequency.value = 40; o.connect(g); g.connect(ctx.destination); o.start(); keep = {o, g};
+  } catch (e) {}
+}
+function stopKeepAlive() { if (!keep) return; try { keep.o.stop(); keep.o.disconnect(); keep.g.disconnect(); } catch (e) {} keep = null; }
+
+function tone(o) {
+  const {f = 440, t = 0, d = .2, type = 'sine', g = .3, a = .004, f2 = null, lp = null} = o;
+  const c = ctx, st = c.currentTime + t + 0.01;
+  const osc = c.createOscillator(), env = c.createGain();
+  osc.type = type; osc.frequency.setValueAtTime(f, st);
+  if (f2) osc.frequency.exponentialRampToValueAtTime(f2, st + d);
+  env.gain.setValueAtTime(0.0001, st);
+  env.gain.linearRampToValueAtTime(g, st + a);
+  env.gain.exponentialRampToValueAtTime(0.0001, st + d);
+  if (lp) { const bq = c.createBiquadFilter(); bq.type = 'lowpass'; bq.frequency.value = lp; osc.connect(bq); bq.connect(env); }
+  else osc.connect(env);
+  env.connect(master); osc.start(st); osc.stop(st + d + 0.05);
+}
+function noise(t, d, hp, g) {
+  const c = ctx, len = Math.ceil(c.sampleRate * d), buf = c.createBuffer(1, len, c.sampleRate), data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+  const src = c.createBufferSource(); src.buffer = buf;
+  const f = c.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = hp;
+  const e = c.createGain(), st = c.currentTime + t + 0.01;
+  e.gain.setValueAtTime(g, st); e.gain.exponentialRampToValueAtTime(0.0001, st + d);
+  src.connect(f); f.connect(e); e.connect(master); src.start(st);
+}
+// Dual-bandpass vowel-formant synth
+function vowel(o) {
+  const {t = 0, d = .25, f0 = 170, f0e = null, F1, F2, g = 1.1} = o;
+  const c = ctx, st = c.currentTime + t + 0.01;
+  const src = c.createOscillator(); src.type = 'sawtooth';
+  src.frequency.setValueAtTime(f0, st);
+  if (f0e) src.frequency.linearRampToValueAtTime(f0e, st + d);
+  const env = c.createGain();
+  env.gain.setValueAtTime(0.0001, st);
+  env.gain.linearRampToValueAtTime(g, st + .025);
+  env.gain.setValueAtTime(g, st + d * .6);
+  env.gain.exponentialRampToValueAtTime(0.0001, st + d);
+  [[F1, 9, 1], [F2, 12, .6]].forEach(([fr, q, gain]) => {
+    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = fr; bp.Q.value = q;
+    const gg = c.createGain(); gg.gain.value = gain * 3;
+    src.connect(bp); bp.connect(gg); gg.connect(env);
+  });
+  env.connect(master); src.start(st); src.stop(st + d + .05);
+}
+
+const CH = { // chime library
+  pip(k = 1) { const f = 1180 * k; [0, .085].forEach(t => { tone({f, t, d:.07, type:'triangle', g:.5, f2:f * .75}); tone({f:f * 2.4, t, d:.03, g:.12}); }); },
+  work() { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => { tone({f, t:i * .085, d:.3, type:'sawtooth', g:.17, lp:2600}); tone({f:f * 2, t:i * .085, d:.2, type:'square', g:.05, lp:3000}); }); },
+  rest() { tone({f:880, d:.55, g:.32}); tone({f:1760, d:.3, g:.06}); tone({f:587.33, t:.2, d:.7, g:.32}); tone({f:1174.7, t:.2, d:.35, g:.06}); },
+  round() { [349.23, 440, 523.25, 659.25].forEach((f, i) => { tone({f, t:i * .12, d:2.4, g:.22}); tone({f:f * 2.01, t:i * .12, d:1.3, g:.07}); tone({f:f * 4.2, t:i * .12, d:.4, g:.025}); }); },
+  done() {
+    [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5, 1318.5, 1568].forEach((f, i) => {
+      const t = [0, .12, .24, .36, .62, .74, .86, 1.02][i], d = i === 7 ? 1.8 : .32;
+      tone({f, t, d, type:'sawtooth', g:.16, lp:2800}); tone({f:f * 2, t, d:d * .7, g:.07});
+    });
+    [261.63, 329.63, 392].forEach(f => tone({f, t:1.02, d:1.8, g:.12, type:'triangle'}));
+  },
+};
+const CAD = { // synth cadence
+  go()    { vowel({t:0,  d:.22, f0:190, f0e:170, F1:450, F2:850}); noise(0, .03, 1500, .15);
+            vowel({t:.3, d:.26, f0:215, f0e:185, F1:450, F2:850}); noise(.3, .03, 1500, .15); },
+  rest(long) { const d = long ? .85 : .5; vowel({t:0, d, f0:165, f0e:105, F1:600, F2:1900}); noise(d * .8, .09, 5000, .22); },
+};
+
+function say(txt) {
+  if (S.muted || !('speechSynthesis' in window)) return;
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt); u.volume = Math.max(.05, S.volume); u.rate = 1.05; speechSynthesis.speak(u); } catch (e) {}
+}
+function countdownCue(sec) {
+  if (S.muted) return;
+  if (S.mode === 'voice') { say(String(sec)); return; }
+  if (!ensureAudio()) return; CH.pip(sec === 1 ? 1.25 : 1);
+}
+function playPhaseCue(phase, info) {
+  if (S.muted) return;
+  if (S.mode === 'voice') {
+    const txt = {PREP:'Get ready', WORK:'Work! ' + info.name, REST:'Rest. Up next: ' + info.next,
+      ROUND_REST:`Round ${info.round} complete. Take a long rest`, COMPLETE:'Workout complete. Great job!'}[phase];
+    if (txt) say(txt); return;
+  }
+  if (!ensureAudio()) return;
+  if (phase === 'PREP') { CH.pip(.8); return; }
+  if (phase === 'COMPLETE') { CH.done(); return; }
+  if (S.mode === 'cadence') {
+    if (phase === 'WORK') CAD.go(); else CAD.rest(phase === 'ROUND_REST');
+    return;
+  }
+  if (phase === 'WORK') CH.work(); else if (phase === 'REST') CH.rest(); else CH.round();
+}
+function announce(p) {
+  playPhaseCue(p.phase, {name:exName(p.ex), next:upNext(p), round:p.round + 1});
+}
+
+/* ============ Wake lock ============ */
+let wl = null;
+async function requestWake() { try { if ('wakeLock' in navigator && !wl) { wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; }); } } catch (e) {} }
+function releaseWake() { try { wl && wl.release(); } catch (e) {} wl = null; }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { if (status === 'running') requestWake(); renderTick(); } });
+
+/* ============ Background worker ticker ============ */
+let worker = null, fallbackId = null;
+try {
+  const src = "let id=null;onmessage=e=>{if(e.data==='start'){if(id)clearInterval(id);id=setInterval(()=>postMessage('t'),50)}else if(e.data==='stop'){clearInterval(id);id=null}};";
+  worker = new Worker(URL.createObjectURL(new Blob([src], {type:'text/javascript'})));
+  worker.onmessage = () => tick();
+} catch (e) { worker = null; }
+function startLoop() { if (worker) worker.postMessage('start'); else if (!fallbackId) fallbackId = setInterval(tick, 50); }
+function stopLoop() { if (worker) worker.postMessage('stop'); if (fallbackId) { clearInterval(fallbackId); fallbackId = null; } }
+
+/* ============ Engine ============ */
+function initPos() { pos = startPos(); remaining = dur(pos); status = 'idle'; serial++; cueKey = ''; }
+function cancelSpeech() { try { 'speechSynthesis' in window && speechSynthesis.cancel(); } catch (e) {} }
+function resetWorkout() { stopLoop(); stopKeepAlive(); releaseWake(); cancelSpeech(); initPos(); renderStatic(); }
+function start() {
+  if (status === 'running') return;
+  ensureAudio();
+  if (status === 'complete') initPos();
+  const fresh = status === 'idle';
+  status = 'running'; last = performance.now();
+  startLoop(); startKeepAlive(); requestWake();
+  if (fresh && pos.phase !== 'PREP') announce(pos);
+  renderStatic();
+}
+function pause() { if (status !== 'running') return; status = 'paused'; stopLoop(); stopKeepAlive(); releaseWake(); cancelSpeech(); renderStatic(); }
+const toggleRun = () => status === 'running' ? pause() : start();
+function finishState() { status = 'complete'; remaining = 0; stopLoop(); stopKeepAlive(); releaseWake(); }
+function tick() {
+  if (status !== 'running') return;
+  const now = performance.now(); remaining -= now - last; last = now;
+  let changed = false;
+  while (remaining <= 0 && pos.phase !== 'COMPLETE') {
+    const over = -remaining; pos = nextPos(pos); serial++; changed = true; remaining = dur(pos) - over;
+  }
+  if (pos.phase === 'COMPLETE') { finishState(); announce(pos); renderStatic(); return; }
+  if (changed) { announce(pos); renderStatic(); return; }
+  const sec = Math.ceil(remaining / 1000);
+  if (sec >= 1 && sec <= 3 && dur(pos) > sec * 1000) {
+    const key = serial + ':' + sec;
+    if (key !== cueKey) { cueKey = key; countdownCue(sec); }
+  }
+  renderTick();
+}
+function skipFwd() {
+  if (status === 'complete') return;
+  const was = status;
+  pos = nextPos(pos); serial++; remaining = dur(pos); cueKey = '';
+  if (pos.phase === 'COMPLETE') { finishState(); if (was === 'running') announce(pos); }
+  else if (was === 'running') { last = performance.now(); announce(pos); }
+  renderStatic();
+}
+function skipBack() {
+  const elapsed = dur(pos) - remaining;
+  if (status !== 'idle' && elapsed > 1500 && pos.phase !== 'COMPLETE') { remaining = dur(pos); }
+  else { const wasDone = status === 'complete'; pos = prevPos(pos); remaining = dur(pos); if (wasDone) status = 'paused'; }
+  serial++; cueKey = ''; if (status === 'running') last = performance.now();
+  renderStatic();
+}
+
+/* ============ Rendering ============ */
+const C = 2 * Math.PI * 88;
+let lastTitle = '', lastSecShown = -1;
+
+function heroHTML() {
+  const p = pos;
+  if (p.phase === 'COMPLETE') return `<div class="exname">🎉 Workout Complete!</div><div class="badge-up">${S.rd} round${S.rd > 1 ? 's' : ''} × ${S.ex} exercise${S.ex > 1 ? 's' : ''} · ${fmtMs(totalDur)}</div>`;
+  const un = esc(upNext(p));
+  if (p.phase === 'WORK') return `<div class="exname">${esc(exName(p.ex))}</div><div class="badge-up">Up Next: <b>${un}</b></div>`;
+  return `<div class="callout">Up Next: <b>${un}</b></div>`;
+}
+function dotsHTML() {
+  const p = pos; let done = 0, cur = -1, rDone = p.round, rCur = -1;
+  if (p.phase === 'WORK') { done = p.ex; cur = p.ex; rCur = p.round; }
+  else if (p.phase === 'REST') { done = p.ex + 1; rCur = p.round; }
+  else if (p.phase === 'ROUND_REST') { done = S.ex; rDone = p.round + 1; }
+  else if (p.phase === 'COMPLETE') { done = S.ex; rDone = S.rd; }
+  const ex = Array.from({length:S.ex}, (_, i) => `<span class="dot ${i < done ? 'done' : ''} ${i === cur ? 'cur' : ''}" data-tip="${esc(exName(i))}" title="${esc(exName(i))}"></span>`).join('');
+  const rd = Array.from({length:S.rd}, (_, i) => `<span class="dot ${i < rDone ? 'done' : ''} ${i === rCur ? 'cur' : ''}" data-tip="Round ${i + 1}" title="Round ${i + 1}"></span>`).join('');
+  $('#exDots').innerHTML = ex; $('#rdDots').innerHTML = rd;
+}
+function renderStatic() {
+  const meta = PH[pos.phase];
+  document.documentElement.style.setProperty('--accent', meta.color);
+  const tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = '#070b16';
+  $('#phaseChip').textContent = meta.label;
+  let info = '';
+  if (pos.phase === 'PREP') info = 'Workout starts soon';
+  else if (pos.phase === 'ROUND_REST') info = `Round ${pos.round + 1} of ${S.rd} complete`;
+  else if (pos.phase === 'COMPLETE') info = 'All rounds finished';
+  else info = `Round ${pos.round + 1} / ${S.rd} · Exercise ${pos.ex + 1} / ${S.ex}`;
+  $('#roundInfo').textContent = info;
+  $('#heroInfo').innerHTML = heroHTML();
+  dotsHTML();
+  restAfter = pos.phase === 'COMPLETE' ? 0 : sumFrom(nextPos(pos));
+  totalDur = Math.max(1, sumFrom(startPos()));
+  const b = $('#btnStart');
+  b.textContent = status === 'running' ? 'Pause' : status === 'paused' ? 'Resume' : status === 'complete' ? 'Restart' : 'Start';
+  const locked = status === 'running';
+  $('#fields').classList.toggle('locked', locked); $('#presets').classList.toggle('locked', locked);
+  $('#lockHint').hidden = !locked;
+  $('#subText').textContent = status === 'paused' ? 'PAUSED' : status === 'idle' ? 'READY' : '';
+  $('#btnMute').textContent = S.muted ? '🔇 Muted' : '🔊 Sound on';
+  lastSecShown = -1; lastTitle = '';
+  renderTick(); renderPip();
+}
+function renderTick() {
+  const secShown = Math.ceil(remaining / 1000);
+  const d = dur(pos);
+  const frac = pos.phase === 'COMPLETE' ? 1 : (d > 0 ? Math.max(0, Math.min(1, remaining / d)) : 0);
+  const warn = status === 'running' && pos.phase !== 'COMPLETE' && secShown >= 1 && secShown <= 3;
+  $('#ringBar').style.strokeDashoffset = (C * (1 - frac)).toFixed(2);
+  $('#ringBar').classList.toggle('warn', warn);
+  $('#timeText').classList.toggle('warn', warn);
+  if (secShown !== lastSecShown) {
+    lastSecShown = secShown;
+    $('#timeText').textContent = pos.phase === 'COMPLETE' ? '0:00' : fmtMs(remaining);
+    const totalRem = remaining + restAfter;
+    $('#totalRem').textContent = fmtMs(totalRem);
+    const pct = pos.phase === 'COMPLETE' ? 100 : clamp((1 - totalRem / totalDur) * 100, 0, 100);
+    $('#progBar').style.width = pct.toFixed(1) + '%'; $('#progPct').textContent = Math.floor(pct) + '%';
+    let t = 'PulseHIIT – Interval Timer';
+    if (status === 'complete') t = 'Workout Complete - PulseHIIT';
+    else if (status !== 'idle') t = `(${fmtMs(remaining)}) ${pos.phase === 'WORK' ? exName(pos.ex) : PH[pos.phase].short} - PulseHIIT`;
+    if (t !== lastTitle) { lastTitle = t; document.title = t; }
+    renderPip();
+  }
+}
+
+/* ============ Picture-in-Picture mini-timer ============ */
+let pip = null;
+function renderPip() {
+  if (!pip) return;
+  try {
+    const e = pip.els, meta = PH[pos.phase];
+    e.root.style.background = meta.color; e.ph.textContent = meta.label;
+    e.tm.textContent = pos.phase === 'COMPLETE' ? 'Done!' : fmtMs(remaining);
+    e.ex.textContent = pos.phase === 'WORK' ? exName(pos.ex) : (pos.phase === 'COMPLETE' ? 'Great work 🎉' : (pos.phase === 'PREP' ? 'Get ready' : 'Recover'));
+    e.nx.textContent = pos.phase === 'COMPLETE' ? '' : 'Up Next: ' + upNext(pos);
+    e.bt.textContent = status === 'running' ? 'Pause' : status === 'complete' ? 'Restart' : 'Start';
+  } catch (err) {}
+}
+async function togglePip() {
+  if (pip) { try { pip.win.close(); } catch (e) {} pip = null; return; }
+  if (!('documentPictureInPicture' in window)) {
+    toast('Mini-Timer needs desktop Chrome/Edge 116+. Your timer still runs accurately in a background tab.', 5200); return;
+  }
+  try {
+    const win = await window.documentPictureInPicture.requestWindow({width:320, height:230});
+    const d = win.document;
+    d.head.innerHTML = '<meta name="viewport" content="width=device-width,initial-scale=1"><title>PulseHIIT</title>';
+    const st = d.createElement('style');
+    st.textContent = 'html,body{margin:0;height:100%;font-family:system-ui,sans-serif}#r{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#04120c;text-align:center;padding:8px;box-sizing:border-box;transition:background .3s}#ph{font-weight:800;letter-spacing:.15em;font-size:13px}#tm{font-weight:800;font-size:64px;line-height:1;font-variant-numeric:tabular-nums}#ex{font-weight:800;font-size:19px}#nx{font-size:13px;opacity:.85}#bt{margin-top:6px;border:0;border-radius:10px;padding:7px 22px;font-weight:700;background:#04120c;color:#fff;cursor:pointer}';
+    d.head.appendChild(st);
+    d.body.innerHTML = '<div id="r"><div id="ph"></div><div id="tm"></div><div id="ex"></div><div id="nx"></div><button id="bt"></button></div>';
+    pip = {win, els:{root:d.getElementById('r'), ph:d.getElementById('ph'), tm:d.getElementById('tm'), ex:d.getElementById('ex'), nx:d.getElementById('nx'), bt:d.getElementById('bt')}};
+    pip.els.bt.onclick = toggleRun;
+    win.addEventListener('pagehide', () => { pip = null; });
+    renderPip();
+  } catch (e) { toast('Could not open the Mini-Timer: ' + (e && e.message || e), 4000); }
+}
+
+/* ============ Settings UI ============ */
+function buildFields() {
+  $('#fields').innerHTML = FIELDS.map(f => `
+    <div class="field"><label for="f_${f.k}">${f.label}${f.type === 'time' ? ' <span class="text-slate-500 text-xs">(MM:SS)</span>' : ''}</label>
+      <div class="stepper">
+        <button type="button" data-k="${f.k}" data-d="-1" aria-label="Decrease ${f.label}">−</button>
+        <input id="f_${f.k}" data-k="${f.k}" type="text" inputmode="${f.type === 'time' ? 'text' : 'numeric'}" autocomplete="off" aria-label="${f.label}">
+        <button type="button" data-k="${f.k}" data-d="1" aria-label="Increase ${f.label}">+</button>
+      </div></div>`).join('');
+  syncFields();
+}
+function syncFields() { FIELDS.forEach(f => { const el = $('#f_' + f.k); if (el) el.value = f.type === 'time' ? fmtMMSS(S[f.k]) : String(S[f.k]); }); }
+function setField(k, v) {
+  const f = FIELDS.find(x => x.k === k); v = clamp(Math.round(v), f.min, f.max);
+  if (v !== S[k]) { S[k] = v; if (k === 'ex') renderNames(); saveS(); resetWorkout(); }
+  syncFields();
+}
+$('#fields').addEventListener('click', e => {
+  const b = e.target.closest('button[data-k]'); if (!b) return;
+  const f = FIELDS.find(x => x.k === b.dataset.k); setField(f.k, S[f.k] + f.step * Number(b.dataset.d));
+});
+$('#fields').addEventListener('change', e => {
+  const i = e.target.closest('input[data-k]'); if (!i) return;
+  const v = parseTime(i.value); if (Number.isNaN(v)) { syncFields(); return; } setField(i.dataset.k, v);
+});
+$('#fields').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.target.blur(); });
+$('#fields').addEventListener('focusin', e => { if (e.target.tagName === 'INPUT') e.target.select(); });
+
+function renderNames() {
+  $('#namesGrid').innerHTML = Array.from({length:S.ex}, (_, i) =>
+    `<label class="namefield"><span>${i + 1}</span><input type="text" data-i="${i}" maxlength="40" placeholder="Exercise ${i + 1}" value="${esc(S.names[i] || '')}"></label>`).join('');
+}
+$('#namesGrid').addEventListener('input', e => {
+  const i = e.target.dataset.i; if (i === undefined) return;
+  while (S.names.length <= Number(i)) S.names.push('');
+  S.names[Number(i)] = e.target.value; saveS(); renderStatic();
+});
+$('#btnClearNames').addEventListener('click', () => { S.names = []; saveS(); renderNames(); renderStatic(); toast('Exercise names reset'); });
+
+function renderPresets() {
+  const chip = (name, attr, del) => `<span class="chip"><button type="button" ${attr}>${esc(name)}</button>${del ? `<button type="button" class="x" data-del="${del}" title="Delete preset" aria-label="Delete preset ${esc(name)}">✕</button>` : ''}</span>`;
+  $('#presets').innerHTML = BUILT.map((p, i) => chip(p.name, `data-b="${i}"`, '')).join('') +
+    custom.map((p, i) => chip(p.name, `data-c="${i}"`, 'c' + i)).join('');
+}
+function applyPreset(p) {
+  ['work','rest','roundRest','ex','rd','prep'].forEach(k => { S[k] = p[k]; });
+  S.names = (p.names || []).slice(); sanitize(); saveS(); renderNames(); syncFields(); resetWorkout(); toast('Loaded “' + p.name + '”');
+}
+$('#presets').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.b !== undefined) applyPreset(BUILT[Number(b.dataset.b)]);
+  else if (b.dataset.c !== undefined) applyPreset(custom[Number(b.dataset.c)]);
+  else if (b.dataset.del) { const i = Number(b.dataset.del.slice(1)); const n = custom[i].name; custom.splice(i, 1); saveP(); renderPresets(); toast('Deleted “' + n + '”'); }
+});
+$('#btnSavePreset').addEventListener('click', () => {
+  const name = (prompt('Name this preset:') || '').trim().slice(0, 30); if (!name) return;
+  const p = {name, work:S.work, rest:S.rest, roundRest:S.roundRest, ex:S.ex, rd:S.rd, prep:S.prep, names:S.names.slice(0, S.ex)};
+  const i = custom.findIndex(x => x.name.toLowerCase() === name.toLowerCase());
+  if (i >= 0) custom[i] = p; else custom.push(p);
+  saveP(); renderPresets(); toast('Saved preset “' + name + '”');
+});
+
+$('#btnFileDefaults').addEventListener('click', () => {
+  applyPreset(Object.assign({name:'file defaults'}, FILE_DEFAULTS));
+  S.mode = FILE_DEFAULTS.mode; S.volume = FILE_DEFAULTS.volume; sanitize(); saveS(); syncAudioUI();
+  if (baked && Array.isArray(baked.presets)) { custom = baked.presets.slice(); saveP(); renderPresets(); }
+});
+
+/* ============ Audio UI ============ */
+const MODE_DESC = {
+  chimes:'Woodblock 3-2-1 pips and musical chimes. Music-safe default.',
+  cadence:'Synthesized “GO! GO!” and “REST” vowel cadences — no OS speech engine. Music-safe.',
+  voice:'Spoken coaching: exercise names, up-next, and round callouts via your device voice.',
+};
+function syncAudioUI() {
+  document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
+  $('#modeDesc').textContent = MODE_DESC[S.mode]; $('#voiceWarn').hidden = S.mode !== 'voice';
+  $('#vol').value = Math.round(S.volume * 100); $('#volVal').textContent = Math.round(S.volume * 100) + '%';
+  $('#btnMute').textContent = S.muted ? '🔇 Muted' : '🔊 Sound on';
+}
+$('#modeSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.mode = b.dataset.mode; saveS(); syncAudioUI(); });
+$('#vol').addEventListener('input', e => { S.volume = Number(e.target.value) / 100; if (S.volume > 0) S.muted = false; saveS(); ensureAudio(); applyVolume(); syncAudioUI(); });
+function toggleMute() { S.muted = !S.muted; saveS(); ensureAudio(); applyVolume(); if (S.muted) cancelSpeech(); syncAudioUI(); }
+document.querySelectorAll('[data-prev]').forEach(b => b.addEventListener('click', () => {
+  ensureAudio(); const k = b.dataset.prev;
+  if (S.muted) { toast('Sound is muted'); return; }
+  if (k === '321') { [3, 2, 1].forEach((n, i) => setTimeout(() => countdownCue(n), i * 900)); }
+  else playPhaseCue(k, {name:'Push-Ups', next:'Squats', round:1});
+}));
+
+/* ============ Share / Save App / PWA ============ */
+function shareURL() {
+  const q = new URLSearchParams({w:S.work, r:S.rest, rr:S.roundRest, ex:S.ex, rd:S.rd, p:S.prep});
+  const names = S.names.slice(0, S.ex).map(n => n.replace(/\|/g, '/'));
+  if (names.some(n => n.trim())) q.set('names', names.join('|'));
+  return location.href.split('?')[0].split('#')[0] + '?' + q.toString();
+}
+async function share() {
+  const url = shareURL();
+  try { await navigator.clipboard.writeText(url); toast('Share link copied to clipboard'); }
+  catch (e) {
+    const t = document.createElement('textarea'); t.value = url; t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e2) {} t.remove();
+    if (ok) toast('Share link copied to clipboard'); else prompt('Copy this link:', url);
+  }
+}
+function saveApp() {
+  try {
+    const clone = document.documentElement.cloneNode(true);
+    clone.querySelectorAll('style:not([data-keep]), [data-gen]').forEach(n => n.remove());
+    clone.removeAttribute('style');
+    const cfg = {work:S.work, rest:S.rest, roundRest:S.roundRest, ex:S.ex, rd:S.rd, prep:S.prep, names:S.names.slice(0, S.ex), mode:S.mode, volume:S.volume, muted:false, presets:custom};
+    clone.querySelector('#app-defaults').textContent = JSON.stringify(cfg).replace(/</g, '\\u003c');
+    clone.querySelector('title').textContent = 'PulseHIIT – Interval Timer';
+    const html = '<!DOCTYPE html>\n' + clone.outerHTML;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([html], {type:'text/html'})); a.download = 'pulsehiit-custom.html';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast('Downloaded pulsehiit-custom.html — upload/replace it as your site file (e.g. as index.html) and these settings load every visit.', 6500);
+  } catch (e) { toast('Could not export the app: ' + (e && e.message || e), 4000); }
+}
+function setupPWA() {
+  let icon = null;
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 180; const x = c.getContext('2d');
+    x.fillStyle = '#070b16'; x.fillRect(0, 0, 180, 180);
+    x.lineWidth = 16; x.lineCap = 'round';
+    x.strokeStyle = 'rgba(148,163,184,.28)'; x.beginPath(); x.arc(90, 90, 58, 0, Math.PI * 2); x.stroke();
+    x.strokeStyle = '#10b981'; x.beginPath(); x.arc(90, 90, 58, -Math.PI / 2, Math.PI * 1.15); x.stroke();
+    x.fillStyle = '#10b981'; x.font = '800 54px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('P', 90, 94);
+    icon = c.toDataURL('image/png');
+  } catch (e) {}
+  if (icon) {
+    const l = document.createElement('link'); l.rel = 'apple-touch-icon'; l.href = icon; l.setAttribute('data-gen', ''); document.head.appendChild(l);
+  }
+  const manifest = {name:'PulseHIIT Interval Timer', short_name:'PulseHIIT', display:'standalone', orientation:'portrait',
+    background_color:'#070b16', theme_color:'#070b16', start_url:location.href.split('#')[0],
+    icons: icon ? [{src:icon, sizes:'180x180', type:'image/png'}] : []};
+  const m = document.createElement('link'); m.rel = 'manifest';
+  m.href = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifest));
+  m.setAttribute('data-gen', ''); document.head.appendChild(m);
+}
+
+/* ============ Wiring ============ */
+$('#btnStart').addEventListener('click', toggleRun);
+$('#btnNext').addEventListener('click', skipFwd);
+$('#btnBack').addEventListener('click', skipBack);
+$('#btnReset').addEventListener('click', resetWorkout);
+$('#btnMute').addEventListener('click', toggleMute);
+$('#btnPip').addEventListener('click', togglePip);
+$('#btnShare').addEventListener('click', share);
+$('#btnSaveApp').addEventListener('click', saveApp);
+
+const isText = t => t && (t.tagName === 'INPUT' && t.type !== 'range' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey || isText(e.target)) return;
+  if (e.code === 'Space') { e.preventDefault(); toggleRun(); }
+  else if (e.key === 'r' || e.key === 'R') resetWorkout();
+  else if (e.key === 'n' || e.key === 'N') skipFwd();
+  else if (e.key === 'm' || e.key === 'M') toggleMute();
+});
+document.addEventListener('keyup', e => { if (e.code === 'Space' && !isText(e.target)) e.preventDefault(); });
+
+enforceAmbientMixing();
+// Unlock audio on first interaction so the context is ready for cues
+['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, function once() { ensureAudio(); document.removeEventListener(ev, once); }, {passive:true}));
+
+buildFields(); renderNames(); renderPresets(); syncAudioUI(); setupPWA();
+initPos(); renderStatic();
+if (!storageOK) setTimeout(() => toast('Your browser is blocking saved settings here. Use “Save Settings to File” to keep them.', 7000), 800);
+})();
+</script>
+</body>
+</html>
