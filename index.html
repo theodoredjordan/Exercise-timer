@@ -209,7 +209,7 @@ const pad = n => String(n).padStart(2, '0');
 
 /* ============ Settings & persistence ============ */
 const LS_S = 'pulsehiit.settings.v1', LS_P = 'pulsehiit.presets.v1';
-const BASE = {work:40, rest:20, roundRest:60, ex:5, rd:3, prep:10, names:[], mode:'chimes', volume:0.8, muted:false};
+const BASE = {work:60, rest:30, roundRest:120, ex:5, rd:3, prep:10, names:[], mode:'chimes', volume:0.8, muted:false};
 let baked = null; try { baked = JSON.parse($('#app-defaults').textContent); } catch (e) {}
 const FILE_DEFAULTS = Object.assign({}, BASE, baked || {});
 let S = Object.assign({}, FILE_DEFAULTS);
